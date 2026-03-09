@@ -1,6 +1,5 @@
 from scipy.stats import norm
 from enum import Enum
-import random
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -9,67 +8,6 @@ from tqdm import tqdm
 class StepType(Enum):
     AVG = 0
     CONSTANT = 1
-
-
-class Solver:
-
-    def __init__(
-        self,
-        num_bandits=10,
-        epsilon=0.1,
-        step_type: StepType = StepType.CONSTANT,
-        alpha=0.1,
-    ):
-        self.init_bandit(num_bandits)
-        self.n_actions = [0] * num_bandits  # Same as n in the book
-        self.q_values = [
-            0
-        ] * num_bandits  # This is the estimate for each of the bandits
-        self.epsilon = epsilon
-        self.step_type = step_type
-        self.alpha = alpha
-
-    def play(self, steps=1000):
-
-        optimal_actions = 0
-        optimal_percent = [0]
-        for i in range(steps):
-            action_taken_idx = self.take_action()
-
-            # print(action_taken_idx, np.argmax(self.bandits_means))
-            if np.argmax(self.bandits_means) == action_taken_idx:
-                optimal_actions += 1
-            optimal_percent.append(optimal_actions / (i + 1))
-
-        return np.array(optimal_percent) * 100.0
-
-    def init_bandit(self, num_bandits):
-        self.bandits_means = [norm.rvs(0, 1) for _ in range(num_bandits)]
-
-    def take_action(self):
-        action_idx = -1
-        if random.random() < self.epsilon:
-            action_idx = random.randint(0, len(self.q_values) - 1)
-        else:
-            action_idx = np.argmax(self.q_values)
-
-        # Getting the reward from the bandit mean and variance of 1
-        reward = norm.rvs(self.bandits_means[action_idx], 1)
-
-        # Update the estimates (Q values)
-        if self.step_type == StepType.CONSTANT:
-            self.q_values[action_idx] = self.q_values[action_idx] + self.alpha * (
-                reward - self.q_values[action_idx]
-            )
-
-        elif self.step_type == StepType.AVG:
-            self.n_actions[action_idx] += 1
-            self.q_values[action_idx] = (
-                self.q_values[action_idx]
-                + (reward - self.q_values[action_idx]) / self.n_actions[action_idx]
-            )
-
-        return action_idx
 
 
 def run_simulation(
@@ -84,8 +22,7 @@ def run_simulation(
 ):
 
     # Need to get runs number of starting true means
-    # rgn = np.random.default_rng(seed)
-    rgn = np.random.default_rng()
+    rgn = np.random.default_rng(seed)
     percent_progress = []
     true_means = rgn.normal(0, 1, size=(runs, num_bandits))
     step_counts = np.zeros(shape=(runs, num_bandits))
@@ -193,8 +130,6 @@ def plot_epsilon_vs_performance(
 
 def main():
 
-    results = []
-    labels = []
     epsilons = [1 / 128, 1 / 64, 1 / 32, 1 / 16, 1 / 8, 1 / 4]
     performances = []
     for item in epsilons:
